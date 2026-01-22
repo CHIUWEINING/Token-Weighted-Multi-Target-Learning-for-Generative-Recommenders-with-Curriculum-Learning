@@ -1,0 +1,182 @@
+# Token-Weighted-Multi-Target-Learning-for-Generative-Recommenders-with-Curriculum-Learning
+## Overview
+
+This repository contains the implementation of **Token-Weighted-Multi-Target-Learning-for-Generative-Recommenders-with-Curriculum-Learning**, our novel approach to generative recommendation systems. We mainly test our method upon the **TIGER** architecture ([Zhang et al., 2023](https://arxiv.org/abs/2305.05065)) and leverages semantic IDs generated through Residual Quantized Variational Autoencoders (RQ-VAE). 
+
+Our approach combines token-weighted multi-target learning with curriculum learning strategies to improve recommendation quality. The key innovation is integrating these techniques with TIGER's architecture to achieve better recommendation performance.
+
+The repository is organized into two main components:
+
+- **RQ-VAE**: For training custom semantic ID tokenizers and generating semantic IDs from embeddings
+- **TIGER**: The recommendation model architecture that we use to implement our method with the generated semantic IDs
+
+## Project Structure
+
+```
+├── data/                          # Pre-prepared datasets and semantic IDs
+│   ├── movieLens/
+│   ├── Random_Hashing_Musical_Instruments/
+│   ├── Random_Hashing_Industrial_and_Scientific/
+│   └── Yelp/
+├── RQ-VAE/                        # Semantic ID generation pipeline
+│   ├── train_tokenizer.sh         # Train the RQ-VAE tokenizer
+│   ├── tokenize.sh                # Generate semantic IDs from embeddings
+│   ├── main.py
+│   ├── generate_indices.py
+│   └── ...
+├── TIGER/                         # Main recommendation model
+│   ├── run_all.sh                 # Run the complete TIGER pipeline
+│   ├── finetune.py
+│   ├── test.py
+│   └── ...
+└── checkpoint/                    # Saved model checkpoints
+```
+
+## Quick Start
+
+### Option 1: Using Pre-prepared Semantic IDs (Recommended)
+
+We have prepared semantic IDs for the following datasets:
+- **movieLens**
+- **Random_Hashing_Musical_Instruments**
+- **Random_Hashing_Industrial_and_Scientific**
+- **Yelp**
+
+These pre-computed semantic IDs are located in the `data/` directory. To directly run our TIGER method:
+
+1. Navigate to the TIGER directory:
+   ```bash
+   cd TIGER/
+   ```
+
+2. Edit `run_all.sh` to specify your desired dataset and GPU device:
+   ```bash
+   DATASET=movieLens          # or other available datasets
+   DEVICE=0                   # GPU device ID
+   ```
+
+3. Run the pipeline:
+   ```bash
+   bash run_all.sh
+   ```
+
+This will train our method on the TIGER architecture and evaluate it on your chosen dataset.
+
+### Option 2: Training Your Own Semantic IDs
+
+If you want to train custom semantic IDs from your own embeddings, follow these steps:
+
+#### Step 1: Train the Semantic ID Tokenizer
+
+The RQ-VAE tokenizer learns to compress embeddings into discrete semantic tokens.
+
+1. Navigate to the RQ-VAE directory:
+   ```bash
+   cd RQ-VAE/
+   ```
+
+2. Edit `train_tokenizer.sh` to specify your dataset and GPU device:
+   ```bash
+   DATASET=movieLens          # Change to your dataset name
+   export CUDA_VISIBLE_DEVICES=1  # Specify GPU device
+   ```
+
+3. Ensure your embeddings are located at:
+   ```
+   ../data/$DATASET/$DATASET.emb-llama-td.npy
+   ```
+
+4. Run the tokenizer training:
+   ```bash
+   bash train_tokenizer.sh
+   ```
+
+   This will train the RQ-VAE model and save checkpoints to `../checkpoint/rqvae/$DATASET/`.
+
+#### Step 2: Generate Semantic IDs
+
+After training the tokenizer, generate semantic IDs from your embeddings.
+
+1. Edit `tokenize.sh` to specify your dataset:
+   ```bash
+   DATASET=movieLens          # Same dataset as Step 1
+   ```
+
+2. Run the tokenization:
+   ```bash
+   bash tokenize.sh
+   ```
+
+   This will generate semantic ID indices and save them to `../data/$DATASET/`.
+
+#### Step 3: Train and Evaluate TIGER
+
+Once you have generated the semantic IDs:
+
+1. Navigate to the TIGER directory:
+   ```bash
+   cd ../TIGER/
+   ```
+
+2. Edit `run_all.sh` to use your dataset:
+   ```bash
+   DATASET=movieLens          # Your dataset name
+   DEVICE=0                   # GPU device ID
+   ```
+
+3. Run the TIGER pipeline with our method:
+   ```bash
+   bash run_all.sh
+   ```
+
+## Configuration
+
+### RQ-VAE Configuration
+
+- **Dataset Path**: Embeddings should be in `.npy` format at `data/$DATASET/$DATASET.emb-llama-td.npy`
+- **Checkpoint Directory**: Models are saved to `checkpoint/rqvae/$DATASET/`
+- **Output**: Generates `.index.json` files in `data/$DATASET/`
+
+### TIGER Configuration
+
+Key parameters in `run_all.sh`:
+
+- `DATASET`: Name of the dataset (without spaces)
+- `DEVICE`: GPU device ID to use
+- `SEEDS`: List of random seeds for multiple runs
+- `c`: Curriculum parameter, which controls the pace of curriculum learning
+- `epochs`: Number of training epochs (default: 200)
+- `per_device_batch_size`: Batch size for training (default: 256)
+
+## Dependencies
+
+The project requires PyTorch, transformers, and other common deep learning libraries. Please refer to individual script documentation for specific requirements.
+
+## Datasets
+
+The repository includes support for the following datasets:
+
+| Dataset | Description |
+|---------|-------------|
+| movieLens | Movie recommendation dataset |
+| Random_Hashing_Musical_Instruments | Amazon Musical Instruments category |
+| Random_Hashing_Industrial_and_Scientific | Amazon Industrial & Scientific category |
+| Yelp | Yelp business recommendation dataset |
+
+## Output
+
+After running TIGER, results will be saved to:
+- Model checkpoints: `checkpoint/transformer_seed{SEED}_{DATASET}/`
+- Performance metrics: `data/{DATASET}/perf_{METHOD}_{SEED}.json`
+
+## Notes
+
+- Ensure sufficient GPU memory for training (especially for larger datasets)
+- Pre-trained checkpoints and tokenizers are included in the `checkpoint/` directory
+- Adjust learning rates and batch sizes based on your GPU memory availability
+
+## References
+
+- **TIGER**: [Towards Generative AI-Assisted Extreme Large-Scale E-Commerce Search](https://arxiv.org/abs/2305.05065) - The base architecture upon which our method is implemented
+
+For more details on the methodology and our contributions, please refer to the paper and individual module documentation.
