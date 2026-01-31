@@ -39,7 +39,6 @@ def random_assign_to_avoid_collision(all_indices_dict, num_emb_list):
     new_indices_dict = dict()
     invalid_idx_lists = []
     for idx, codes in all_indices_dict.items():
-        stage = code_length - 1
         code_str = "_".join(codes)
         if code_str in unique_set:
             invalid_idx_lists.append(idx)
@@ -47,16 +46,25 @@ def random_assign_to_avoid_collision(all_indices_dict, num_emb_list):
         new_indices_dict[idx] = codes
 
     for idx in invalid_idx_lists:
-        codes = all_indices_dict[idx]
+        stage = code_length - 1
+        codes = all_indices_dict[idx].copy()
         count = 0
         preserve = codes[stage]
         code_str = "_".join(codes)
+        # Only replace one of the codes at
+        # a time. (256 * 4 in letter-tiger's case)
+        # Raise an error if this cannot
+        # be done. I think it means we should
+        # enlarge the codebook size instead of
+        # randomly picking.
         while code_str in unique_set:
             if count >= num_emb_list[stage]:
                 codes[stage] = preserve
                 count = 0
                 stage -= 1
                 preserve = codes[stage]
+            if stage < 0:
+                raise RuntimeError("The codebook size is too small such that the strategy of replacing one of the codes cannot be done...")
             codes[stage] = codes[stage].split("_")[0] + "_" + str(count) + ">"
             code_str = "_".join(codes)
             count += 1
@@ -64,4 +72,3 @@ def random_assign_to_avoid_collision(all_indices_dict, num_emb_list):
         unique_set.add(code_str)
         new_indices_dict[idx] = codes
     return new_indices_dict
-
