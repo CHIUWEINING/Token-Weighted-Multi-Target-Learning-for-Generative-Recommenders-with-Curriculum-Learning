@@ -5,10 +5,13 @@ This repository contains the implementation of **Token-Weighted-Multi-Target-Lea
 
 Our approach combines token-weighted multi-target learning with curriculum learning strategies to improve recommendation quality. The key innovation is integrating these techniques with TIGER's architecture to achieve better recommendation performance.
 
-The repository is organized into two main components:
+We additionally provide a **LLaMA3.2-3B backbone experiment** to evaluate whether the proposed framework generalizes to a larger backbone model. This experiment uses 8-bit LoRA for efficient training and inference.
+
+The repository is organized into three main components:
 
 - **RQ-VAE**: For training custom semantic ID tokenizers and generating semantic IDs from embeddings
 - **TIGER**: The recommendation model architecture that we use to implement our method with the generated semantic IDs
+- **LLaMA3-Backbone**: LLaMA3.2-3B backbone experiment with 8-bit LoRA
 
 ## Project Structure
 
@@ -27,6 +30,11 @@ The repository is organized into two main components:
 ├── TIGER/                         # Main recommendation model
 │   ├── run_all.sh                 # Run the complete TIGER pipeline
 │   ├── finetune.py
+│   ├── test.py
+│   └── ...
+├── LLaMA3-Backbone/               # LLaMA3.2-3B backbone experiment with 8-bit LoRA
+│   ├── run_all.sh
+│   ├── lora_finetune.py
 │   ├── test.py
 │   └── ...
 └── checkpoint/                    # Saved model checkpoints
@@ -81,7 +89,29 @@ These pre-computed semantic IDs are located in the `data/` directory. To directl
 
 This will train our method on the TIGER architecture and evaluate it on your chosen dataset.
 
-### Option 2: Training Your Own Semantic IDs
+### Option 2: Running the LLaMA3.2-3B Backbone Experiment
+
+We also include an experiment that replaces the backbone with `meta-llama/Llama-3.2-3B`. The implementation uses 8-bit LoRA with rank `8`, scaling factor `32`, and dropout `0.05`.
+
+1. Navigate to the LLaMA3 backbone directory:
+   ```bash
+   cd LLaMA3-Backbone/
+   ```
+
+2. Edit `run_all.sh` to specify your dataset and GPU device:
+   ```bash
+   DATASET=Random_Hashing_Industrial_and_Scientific
+   DEVICE=0
+   ```
+
+3. Run the pipeline:
+   ```bash
+   bash run_all.sh
+   ```
+
+This will train and evaluate both the original objective and our method with the LLaMA3.2-3B backbone.
+
+### Option 3: Training Your Own Semantic IDs
 
 If you want to train custom semantic IDs from your own embeddings, follow these steps:
 
@@ -167,6 +197,17 @@ Key parameters in `run_all.sh`:
 - `epochs`: Number of training epochs (default: 200)
 - `per_device_batch_size`: Batch size for training (default: 256)
 
+### LLaMA3-Backbone Configuration
+
+Key parameters in `LLaMA3-Backbone/run_all.sh`:
+
+- `DATASET`: Name of the dataset
+- `METHODS`: Methods to run, usually `origin` and `ours`
+- `DEVICE`: GPU device ID to use
+- `SEEDS`: List of random seeds for multiple runs
+- `BASE_MODEL`: LLaMA backbone checkpoint, default `meta-llama/Llama-3.2-3B`
+- `c`: Curriculum parameter, which controls the pace of curriculum learning
+
 ## Dependencies
 
 The project requires PyTorch, transformers, and other common deep learning libraries. Please refer to individual script documentation for specific requirements.
@@ -187,6 +228,10 @@ The repository includes support for the following datasets:
 After running TIGER, results will be saved to:
 - Model checkpoints: `checkpoint/transformer_seed{SEED}_{DATASET}/`
 - Performance metrics: `data/{DATASET}/perf_{METHOD}_{SEED}.json`
+
+After running the LLaMA3 backbone experiment, LoRA adapters and metrics are saved to:
+- Model checkpoints: `checkpoint/transformer{METHOD}_seed{SEED}_{c}/`
+- Performance metrics: `data/{DATASET}/perf{METHOD}_seed{SEED}_{c}.json`
 
 ## Notes
 
